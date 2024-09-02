@@ -4,11 +4,16 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { FormatResponseInterceptor } from './format-response/format-response.interceptor';
+import { InvokeRecordInterceptor } from './invoke-record/invoke-record.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // 全局拦截器
   app.useGlobalPipes(new ValidationPipe());
+  // 全局统一response
+  app.useGlobalInterceptors(new FormatResponseInterceptor());
+  app.useGlobalInterceptors(new InvokeRecordInterceptor());
 
   const configService = app.get(ConfigService);
 

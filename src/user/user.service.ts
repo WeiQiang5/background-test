@@ -17,6 +17,9 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { LoginUserVo, ReturnUser } from './vo/login-user.vo';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { UserDetailVo } from './vo/user-details.vo';
+import { UpdateUserPasswordDto } from './dto/update-password.dto';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class UserService {
@@ -28,6 +31,8 @@ export class UserService {
   private configService: ConfigService;
   @Inject(JwtService)
   private jwtService: JwtService;
+  @Inject(EmailService)
+  private emailService: EmailService;
 
   @InjectRepository(User)
   private userRepository: Repository<User>;
@@ -90,6 +95,15 @@ export class UserService {
         return arr;
       }, []),
     };
+  }
+
+  async findUserDetailById(userId: number): Promise<UserDetailVo> {
+    const foundUser = await this.userRepository.findOne({
+      where: {
+        id: userId,
+      },
+    });
+    return foundUser;
   }
 
   async register(user: RegisterUserDto) {
@@ -176,5 +190,52 @@ export class UserService {
     vo.accessToken = access_token;
     vo.refreshToken = refresh_token;
     return vo;
+  }
+
+  async updatePassword(userId: number, passwordDto: UpdateUserPasswordDto) {
+    const captcha = await this.redisService.get(
+      `update_password_captcha_${passwordDto.email}`,
+    );
+
+    if (!captcha) {
+      throw new HttpException('验证码不存在', HttpStatus.BAD_REQUEST);
+    }
+
+    if (passwordDto.captcha !== captcha) {
+      throw new HttpException('验证码不正确', HttpStatus.BAD_REQUEST);
+    }
+
+    const foundUser = await this.userRepository.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+    foundUser.password = md5(passwordDto.password);
+
+    try {
+      await this.userRepository.save(foundUser);
+      return '密码修改成功';
+    } catch (e) {
+      this.logger.error(e, UserService);
+      return '密码修改失败';
+    }
+  }
+
+  async updatePasswordSendCaptcha(address: string) {
+    const code = Math.random().toString().slice(2, 8);
+
+    await this.redisService.set(
+      `update_password_captcha_${address}`,
+      code,
+      10 * 60,
+    );
+
+    await this.emailService.sendMail({
+      to: address,
+      subject: '更改密码验证码',
+      html: `<p>你的更改密码验证码是${code}</p>`,
+    });
+    return '发送成功';
   }
 }

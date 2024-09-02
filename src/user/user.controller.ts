@@ -3,16 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
   Inject,
   Query,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import {
   ApiBody,
@@ -25,6 +20,10 @@ import { EmailService } from 'src/email/email.service';
 import { RedisService } from 'src/redis/redis.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
+import { GetUserInfo, RequireLogin } from 'src/decorator/user.decorator';
+import { UserDetailVo } from './vo/user-details.vo';
+import { User } from './entities/user.entity';
+import { UpdateUserPasswordDto } from './dto/update-password.dto';
 
 @ApiTags('用户')
 @Controller('user')
@@ -89,5 +88,40 @@ export class UserController {
     } catch (e) {
       throw new UnauthorizedException('token已失效,请重新登录');
     }
+  }
+
+  @Get('info')
+  @RequireLogin()
+  @ApiOkResponse({ type: UserDetailVo })
+  @ApiOperation({ summary: '获取用户信息' })
+  async getInfo(@GetUserInfo('userId') userId: number) {
+    const user = await this.userService.findUserDetailById(userId);
+
+    const vo = new UserDetailVo();
+    vo.id = user.id;
+    vo.email = user.email;
+    vo.username = user.username;
+    vo.headPic = user.headPic;
+    vo.phoneNumber = user.phoneNumber;
+    vo.nickName = user.nickName;
+    vo.createTime = user.createTime;
+    vo.isFrozen = user.isFrozen;
+    return vo;
+  }
+
+  @Post('updatePassword')
+  @RequireLogin()
+  @ApiOperation({ summary: '修改密码' })
+  async updatePassword(
+    @GetUserInfo('userId') userId: number,
+    @Body() passwordDto: UpdateUserPasswordDto,
+  ) {
+    return await this.userService.updatePassword(userId, passwordDto);
+  }
+
+  @Get('updatePassword/sendCaptcha')
+  @ApiOperation({ summary: '发送修改密码的验证码' })
+  async updatePasswordSendCaptcha(@Query('address') address: string) {
+    return await this.userService.updatePasswordSendCaptcha(address);
   }
 }
