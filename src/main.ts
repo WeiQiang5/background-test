@@ -6,6 +6,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FormatResponseInterceptor } from './format-response/format-response.interceptor';
 import { InvokeRecordInterceptor } from './invoke-record/invoke-record.interceptor';
+import { UnloginFilter } from './unlogin/unlogin.filter';
+import { CustomExceptionFilter } from './custom-exception/custom-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,6 +16,9 @@ async function bootstrap() {
   // 全局统一response
   app.useGlobalInterceptors(new FormatResponseInterceptor());
   app.useGlobalInterceptors(new InvokeRecordInterceptor());
+  // 全局统一错误格式
+  app.useGlobalFilters(new UnloginFilter());
+  app.useGlobalFilters(new CustomExceptionFilter());
 
   const configService = app.get(ConfigService);
 

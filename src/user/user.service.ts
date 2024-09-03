@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { md5 } from 'src/utils';
@@ -20,6 +20,17 @@ import { JwtService } from '@nestjs/jwt';
 import { UserDetailVo } from './vo/user-details.vo';
 import { UpdateUserPasswordDto } from './dto/update-password.dto';
 import { EmailService } from 'src/email/email.service';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginationDto } from 'src/utils/req-list-query';
+
+interface EmailCaptcha {
+  prefix: string;
+  address: string;
+  subject: string;
+  html: string;
+  time?: number;
+  code: string;
+}
 
 @Injectable()
 export class UserService {
@@ -222,20 +233,120 @@ export class UserService {
     }
   }
 
-  async updatePasswordSendCaptcha(address: string) {
-    const code = Math.random().toString().slice(2, 8);
-
-    await this.redisService.set(
-      `update_password_captcha_${address}`,
-      code,
-      10 * 60,
+  async update(userId: number, updateUserDto: UpdateUserDto) {
+    const captcha = await this.redisService.get(
+      `update_user_captcha_${updateUserDto.email}`,
     );
+
+    if (!captcha) {
+      throw new HttpException('验证码已失效', HttpStatus.BAD_REQUEST);
+    }
+
+    if (updateUserDto.captcha !== captcha) {
+      throw new HttpException('验证码不正确', HttpStatus.BAD_REQUEST);
+    }
+
+    const foundUser = await this.userRepository.findOneBy({
+      id: userId,
+    });
+
+    if (updateUserDto.nickName) {
+      foundUser.nickName = updateUserDto.nickName;
+    }
+
+    if (updateUserDto.headPic) {
+      foundUser.headPic = updateUserDto.headPic;
+    }
+
+    try {
+      await this.userRepository.save(foundUser);
+      return '用户信息修改成功';
+    } catch (e) {
+      this.logger.error(e, UserService);
+      return '用户信息修改完成';
+    }
+  }
+  async freezeUserById(userId: number) {
+    const user = await this.userRepository.findOneBy({
+      id: userId,
+    });
+
+    user.isFrozen = true;
+
+    await this.userRepository.save(user);
+  }
+  async findUsersByPage(
+    username: string,
+    nickName: string,
+    email: string,
+    pageNo: number,
+    pageSize: number,
+  ) {
+    const skipCount = (pageNo - 1) * pageSize;
+
+    const condition: Record<string, any> = {};
+    if (username) {
+      condition.username = Like(`%${username}%`);
+    }
+    if (nickName) {
+      condition.nickName = Like(`%${nickName}%`);
+    }
+    if (email) {
+      condition.email = Like(`%${email}%`);
+    }
+
+    console.log('skipCount=>', skipCount, pageNo, pageSize);
+    const [users, totalCount] = await this.userRepository.findAndCount({
+      select: [
+        'id',
+        'username',
+        'nickName',
+        'email',
+        'phoneNumber',
+        'isFrozen',
+        'headPic',
+        'createTime',
+      ],
+      skip: skipCount,
+      take: pageSize,
+      where: condition,
+    });
+
+    return {
+      list: users,
+      total: totalCount,
+    };
+  }
+  // 发送邮件
+  async commonSendCaptcha(params: EmailCaptcha) {
+    const { prefix, address, subject, html, time, code } = params;
+    await this.redisService.set(`${prefix}${address}`, code, time ?? 10 * 60);
 
     await this.emailService.sendMail({
       to: address,
-      subject: '更改密码验证码',
-      html: `<p>你的更改密码验证码是${code}</p>`,
+      subject,
+      html,
     });
     return '发送成功';
+  }
+  async updatePasswordSendCaptcha(address: string) {
+    const code = Math.random().toString().slice(2, 8);
+    await this.commonSendCaptcha({
+      prefix: 'update_password_captcha_',
+      address,
+      subject: '更改密码验证码',
+      html: `<p>你的更改密码验证码是${code}</p>`,
+      code,
+    });
+  }
+  async updateCaptcha(address) {
+    const code = Math.random().toString().slice(2, 8);
+    await this.commonSendCaptcha({
+      prefix: 'update_user_captcha_',
+      address,
+      subject: '更改用户信息验证码',
+      html: `<p>你的验证码是 ${code}</p>`,
+      code,
+    });
   }
 }

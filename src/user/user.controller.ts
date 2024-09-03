@@ -6,6 +6,8 @@ import {
   Inject,
   Query,
   UnauthorizedException,
+  Param,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -13,6 +15,7 @@ import {
   ApiBody,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -22,8 +25,10 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { GetUserInfo, RequireLogin } from 'src/decorator/user.decorator';
 import { UserDetailVo } from './vo/user-details.vo';
-import { User } from './entities/user.entity';
 import { UpdateUserPasswordDto } from './dto/update-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginationDto } from 'src/utils/req-list-query';
+import { generateParseIntPipe } from 'src/utils/pipe';
 
 @ApiTags('用户')
 @Controller('user')
@@ -37,6 +42,30 @@ export class UserController {
   @Inject(JwtService)
   private jwtService: JwtService;
 
+  @Get('list')
+  @ApiOperation({ summary: '获取全部用户' })
+  async list(
+    @Query(
+      'pageSize',
+      new DefaultValuePipe(1),
+      generateParseIntPipe('pageSize'),
+    )
+    pageSize: number,
+    @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo'))
+    pageNo: number,
+    @Query('username') username: string,
+    @Query('nickName') nickName: string,
+    @Query('email') email: string,
+  ) {
+    console.log('list', pageSize);
+    return await this.userService.findUsersByPage(
+      username,
+      nickName,
+      email,
+      pageNo,
+      pageSize,
+    );
+  }
   @Post('register')
   @ApiBody({ type: RegisterUserDto })
   @ApiOkResponse({ type: RegisterUserDto })
@@ -123,5 +152,27 @@ export class UserController {
   @ApiOperation({ summary: '发送修改密码的验证码' })
   async updatePasswordSendCaptcha(@Query('address') address: string) {
     return await this.userService.updatePasswordSendCaptcha(address);
+  }
+
+  @Post('update')
+  @RequireLogin()
+  @ApiOperation({ summary: '更改用户信息' })
+  async update(
+    @GetUserInfo('userId') userId: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return await this.userService.update(userId, updateUserDto);
+  }
+
+  @Get('update/sendCaptcha')
+  @ApiOperation({ summary: '发送修改用户信息的验证码' })
+  async updateCaptcha(@Query('address') address: string) {
+    return await this.userService.updateCaptcha(address);
+  }
+
+  @Get('freeze')
+  @ApiOperation({ summary: '冻结用户' })
+  async freeze(@Query('id') userId: number) {
+    return await this.userService.freezeUserById(userId);
   }
 }
