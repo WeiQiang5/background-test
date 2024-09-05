@@ -4,6 +4,16 @@ import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 export class UpdateUserPasswordDto {
   @ApiProperty({
     type: String,
+    description: '账号',
+    required: true,
+  })
+  @IsNotEmpty({
+    message: '账号不能为空',
+  })
+  username: string;
+
+  @ApiProperty({
+    type: String,
     description: '密码',
     required: true,
   })

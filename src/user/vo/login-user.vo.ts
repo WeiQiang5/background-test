@@ -34,6 +34,7 @@ export class LoginUserVo {
 export interface ReturnUser {
   id: number;
   username: string;
+  email: string;
   isAdmin: boolean;
   roles: string[];
   permissions: Permission[];

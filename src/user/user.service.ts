@@ -61,6 +61,7 @@ export class UserService {
       {
         userId: user.id,
         username: user.username,
+        email: user.email,
         roles: user.roles,
         permissions: user.permissions,
       },
@@ -96,6 +97,7 @@ export class UserService {
       id: user.id,
       username: user.username,
       isAdmin: user.isAdmin,
+      email: user.email,
       roles: user.roles.map((role) => role.name),
       permissions: user.roles.reduce((arr, item) => {
         item.permissions.forEach((permission) => {
@@ -193,6 +195,7 @@ export class UserService {
     const { access_token, refresh_token } = this.getToken({
       id: vo.userInfo.id,
       username: vo.userInfo.username,
+      email: vo.userInfo.email,
       roles: vo.userInfo.roles,
       permissions: vo.userInfo.permissions,
       isAdmin: vo.userInfo.isAdmin,
@@ -203,7 +206,7 @@ export class UserService {
     return vo;
   }
 
-  async updatePassword(userId: number, passwordDto: UpdateUserPasswordDto) {
+  async updatePassword(passwordDto: UpdateUserPasswordDto) {
     const captcha = await this.redisService.get(
       `update_password_captcha_${passwordDto.email}`,
     );
@@ -218,7 +221,7 @@ export class UserService {
 
     const foundUser = await this.userRepository.findOne({
       where: {
-        id: userId,
+        username: passwordDto.username,
       },
     });
 

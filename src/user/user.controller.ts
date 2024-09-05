@@ -83,7 +83,6 @@ export class UserController {
     const code = Math.random().toString().slice(2, 8);
 
     await this.redisService.set(`captcha_${address}`, code);
-
     await this.emailService.sendMail({
       to: address,
       subject: '注册验证码',
@@ -97,6 +96,7 @@ export class UserController {
   @ApiOkResponse({ type: LoginUserDto })
   @ApiOperation({ summary: '用户登录' })
   async login(@Body() loginUserDto: LoginUserDto) {
+    console.log(loginUserDto);
     return await this.userService.login(loginUserDto);
   }
 
@@ -139,19 +139,16 @@ export class UserController {
   }
 
   @Post('updatePassword')
-  @RequireLogin()
   @ApiOperation({ summary: '修改密码' })
-  async updatePassword(
-    @GetUserInfo('userId') userId: number,
-    @Body() passwordDto: UpdateUserPasswordDto,
-  ) {
-    return await this.userService.updatePassword(userId, passwordDto);
+  async updatePassword(@Body() passwordDto: UpdateUserPasswordDto) {
+    return await this.userService.updatePassword(passwordDto);
   }
 
   @Get('updatePassword/sendCaptcha')
   @ApiOperation({ summary: '发送修改密码的验证码' })
   async updatePasswordSendCaptcha(@Query('address') address: string) {
-    return await this.userService.updatePasswordSendCaptcha(address);
+    await this.userService.updatePasswordSendCaptcha(address);
+    return '验证码发送成功';
   }
 
   @Post('update')
