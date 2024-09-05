@@ -12,6 +12,7 @@ import {
 import { UserService } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOkResponse,
   ApiOperation,
@@ -158,18 +159,23 @@ export class UserController {
     @GetUserInfo('userId') userId: number,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return await this.userService.update(userId, updateUserDto);
+    await this.userService.update(userId, updateUserDto);
+    return '用户信息修改成功';
   }
 
   @Get('update/sendCaptcha')
+  @ApiBearerAuth()
+  @RequireLogin()
   @ApiOperation({ summary: '发送修改用户信息的验证码' })
-  async updateCaptcha(@Query('address') address: string) {
-    return await this.userService.updateCaptcha(address);
+  async updateCaptcha(@GetUserInfo('address') address: string) {
+    await this.userService.updateCaptcha(address);
+    return '验证码发送成功';
   }
 
   @Get('freeze')
   @ApiOperation({ summary: '冻结用户' })
   async freeze(@Query('id') userId: number) {
-    return await this.userService.freezeUserById(userId);
+    await this.userService.freezeUserById(userId);
+    return '用户冻结成功';
   }
 }
