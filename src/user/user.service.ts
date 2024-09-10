@@ -57,6 +57,7 @@ export class UserService {
     access_token: string;
     refresh_token: string;
   } {
+    console.log('user', user);
     const access_token = this.jwtService.sign(
       {
         userId: user.id,
@@ -342,11 +343,11 @@ export class UserService {
       code,
     });
   }
-  async updateCaptcha(address) {
+  async updateCaptcha(email: string) {
     const code = Math.random().toString().slice(2, 8);
     await this.commonSendCaptcha({
       prefix: 'update_user_captcha_',
-      address,
+      address: email,
       subject: '更改用户信息验证码',
       html: `<p>你的验证码是 ${code}</p>`,
       code,

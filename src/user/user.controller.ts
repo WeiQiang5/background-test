@@ -6,8 +6,10 @@ import {
   Inject,
   Query,
   UnauthorizedException,
-  Param,
   DefaultValuePipe,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -16,7 +18,6 @@ import {
   ApiBody,
   ApiOkResponse,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -28,8 +29,11 @@ import { GetUserInfo, RequireLogin } from 'src/decorator/user.decorator';
 import { UserDetailVo } from './vo/user-details.vo';
 import { UpdateUserPasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PaginationDto } from 'src/utils/req-list-query';
 import { generateParseIntPipe } from 'src/utils/pipe';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
+import * as path from 'path';
+import { storage } from 'src/utils/my-file-storage';
 
 @ApiTags('用户')
 @Controller('user')
@@ -167,8 +171,8 @@ export class UserController {
   @ApiBearerAuth()
   @RequireLogin()
   @ApiOperation({ summary: '发送修改用户信息的验证码' })
-  async updateCaptcha(@GetUserInfo('address') address: string) {
-    await this.userService.updateCaptcha(address);
+  async updateCaptcha(@GetUserInfo('email') email: string) {
+    await this.userService.updateCaptcha(email);
     return '验证码发送成功';
   }
 
@@ -177,5 +181,32 @@ export class UserController {
   async freeze(@Query('id') userId: number) {
     await this.userService.freezeUserById(userId);
     return '用户冻结成功';
+  }
+
+  @Post('upload/headPic')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      dest: 'uploads',
+      storage: storage,
+      limits: {
+        fileSize: 1024 * 1024 * 3,
+      },
+      fileFilter(req, file, callback) {
+        const extname = path.extname(file.originalname);
+        if (['.png', '.jpg', '.jpeg'].includes(extname)) {
+          callback(null, true);
+        } else {
+          callback(
+            new BadRequestException('只能上传png,jpg,jpeg格式的图片'),
+            false,
+          );
+        }
+      },
+    }),
+  )
+  @ApiOperation({ summary: '头像上传' })
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    console.log('file', file);
+    return file.path;
   }
 }

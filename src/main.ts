@@ -6,18 +6,24 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FormatResponseInterceptor } from './format-response/format-response.interceptor';
 import { InvokeRecordInterceptor } from './invoke-record/invoke-record.interceptor';
-import { UnloginFilter } from './unlogin/unlogin.filter';
+
 import { CustomExceptionFilter } from './custom-exception/custom-exception.filter';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   // 全局拦截器
   app.useGlobalPipes(new ValidationPipe());
+  app.enableCors();
+  // 静态文件目录设置
+  app.useStaticAssets('uploads', {
+    prefix: '/uploads',
+  });
+
   // 全局统一response
   app.useGlobalInterceptors(new FormatResponseInterceptor());
   app.useGlobalInterceptors(new InvokeRecordInterceptor());
   // 全局统一错误格式
-  app.useGlobalFilters(new UnloginFilter());
   app.useGlobalFilters(new CustomExceptionFilter());
 
   const configService = app.get(ConfigService);
