@@ -6,7 +6,6 @@ import {
   Inject,
   Query,
   UnauthorizedException,
-  DefaultValuePipe,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
@@ -29,11 +28,11 @@ import { GetUserInfo, RequireLogin } from 'src/decorator/user.decorator';
 import { UserDetailVo } from './vo/user-details.vo';
 import { UpdateUserPasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { generateParseIntPipe } from 'src/utils/pipe';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import * as path from 'path';
 import { storage } from 'src/utils/my-file-storage';
+import { ListUserDto } from './dto/list-user.dto';
 
 @ApiTags('用户')
 @Controller('user')
@@ -49,27 +48,8 @@ export class UserController {
 
   @Get('list')
   @ApiOperation({ summary: '获取全部用户' })
-  async list(
-    @Query(
-      'pageSize',
-      new DefaultValuePipe(1),
-      generateParseIntPipe('pageSize'),
-    )
-    pageSize: number,
-    @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo'))
-    pageNo: number,
-    @Query('username') username: string,
-    @Query('nickName') nickName: string,
-    @Query('email') email: string,
-  ) {
-    console.log('list', pageSize);
-    return await this.userService.findUsersByPage(
-      username,
-      nickName,
-      email,
-      pageNo,
-      pageSize,
-    );
+  async list(@Query() query: ListUserDto) {
+    return await this.userService.findUsersByPage(query);
   }
   @Post('register')
   @ApiBody({ type: RegisterUserDto })

@@ -22,6 +22,7 @@ import { UpdateUserPasswordDto } from './dto/update-password.dto';
 import { EmailService } from 'src/email/email.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginationDto } from 'src/utils/req-list-query';
+import { ListUserDto } from './dto/list-user.dto';
 
 interface EmailCaptcha {
   prefix: string;
@@ -279,23 +280,18 @@ export class UserService {
 
     await this.userRepository.save(user);
   }
-  async findUsersByPage(
-    username: string,
-    nickName: string,
-    email: string,
-    pageNo: number,
-    pageSize: number,
-  ) {
+  async findUsersByPage(query: ListUserDto) {
+    const { username, nickName, email, pageNo, pageSize } = query;
     const skipCount = (pageNo - 1) * pageSize;
 
     const condition: Record<string, any> = {};
-    if (username) {
+    if (username && username.trim() !== '') {
       condition.username = Like(`%${username}%`);
     }
-    if (nickName) {
+    if (nickName && nickName.trim() !== '') {
       condition.nickName = Like(`%${nickName}%`);
     }
-    if (email) {
+    if (email && email.trim() !== '') {
       condition.email = Like(`%${email}%`);
     }
 
@@ -313,7 +309,7 @@ export class UserService {
       ],
       skip: skipCount,
       take: pageSize,
-      where: condition,
+      where: Object.keys(condition).length > 0 ? condition : null,
     });
 
     return {
