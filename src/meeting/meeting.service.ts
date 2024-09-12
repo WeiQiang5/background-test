@@ -41,13 +41,13 @@ export class MeetingService {
     const skipCount = (query.pageNo - 1) * query.pageSize;
 
     const params: Record<string, any> = {};
-    if (query.name) {
+    if (query.name && query.name.trim() !== '') {
       params.name = Like(`%${query.name}%`);
     }
     if (query.capacity) {
       params.capacity = Like(`%${query.capacity}%`);
     }
-    if (query.equipment) {
+    if (query.equipment && query.equipment.trim() !== '') {
       params.equipment = query.equipment;
     }
 
