@@ -47,6 +47,8 @@ export class UserController {
   private jwtService: JwtService;
 
   @Get('list')
+  @RequireLogin()
+  @ApiBearerAuth()
   @ApiOperation({ summary: '获取全部用户' })
   async list(@Query() query: ListUserDto) {
     return await this.userService.findUsersByPage(query);

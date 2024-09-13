@@ -81,7 +81,12 @@ export class MeetingService {
       throw new BadRequestException('会议室名字已存在');
     }
 
-    return await this.repository.create(createMeetingdto);
+    try {
+      return await this.repository.create(createMeetingdto);
+    } catch (err) {
+      console.log(err);
+      throw new BadRequestException('创建失败');
+    }
   }
 
   async update(updateMeetingdto: UpdateMeetingDto) {
@@ -106,12 +111,17 @@ export class MeetingService {
       room.equipment = updateMeetingdto.equipment;
     }
 
-    return await this.repository.update(
-      {
-        id: updateMeetingdto.id,
-      },
-      room,
-    );
+    try {
+      return await this.repository.update(
+        {
+          id: updateMeetingdto.id,
+        },
+        room,
+      );
+    } catch (err) {
+      console.log(err);
+      throw new BadRequestException('更新失败');
+    }
   }
   async removeById(id: number) {
     const room = await this.repository.findOneBy({
@@ -120,6 +130,11 @@ export class MeetingService {
     if (!room) {
       throw new BadRequestException('会议室不存在');
     }
-    return await this.repository.delete(id);
+    try {
+      return await this.repository.delete(id);
+    } catch (err) {
+      console.log(err);
+      throw new BadRequestException('删除失败');
+    }
   }
 }
