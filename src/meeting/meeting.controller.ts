@@ -35,7 +35,7 @@ export class MeetingController {
     await this.meetingService.create(createMeetingdto);
     return '创建成功';
   }
-  @Patch('update')
+  @Post('update')
   @ApiBody({ type: UpdateMeetingDto })
   @ApiOperation({ summary: '更新会议室' })
   async update(@Body() updateMeetingDto: UpdateMeetingDto) {

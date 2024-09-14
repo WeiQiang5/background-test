@@ -77,12 +77,13 @@ export class MeetingService {
         name: createMeetingdto.name,
       },
     });
-    if (!room) {
+    if (room) {
       throw new BadRequestException('会议室名字已存在');
     }
-
+    const newRoom = await this.repository.create(createMeetingdto);
     try {
-      return await this.repository.create(createMeetingdto);
+      await this.repository.save(newRoom);
+      return newRoom;
     } catch (err) {
       console.log(err);
       throw new BadRequestException('创建失败');
