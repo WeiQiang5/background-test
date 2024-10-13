@@ -55,6 +55,7 @@ export class MeetingService {
       where: params,
       skip: skipCount,
       take: query.pageSize,
+      order: { createTime: 'DESC' },
     });
 
     return {

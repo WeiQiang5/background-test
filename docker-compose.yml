@@ -1,0 +1,31 @@
+services:
+  nest-app:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    depends_on:
+      - mysql-container
+      - redis-container
+    ports:
+      - 3005:3005 # 将容器的3005端口映射到主机的3005端口
+    networks:
+      - common-network
+  mysql-container:
+    image: mysql
+    volumes:
+      - /Users/winfire/mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: meeting_room_booking_system
+      MYSQL_ROOT_PASSWORD: 229335063
+      MYSQL_ROOT_HOST: '%' # 允许从任意主机连接
+    networks:
+      - common-network
+  redis-container:
+    image: redis
+    volumes:
+      - /Users/winfire/redis-data:/data
+    networks:
+      - common-network
+networks:
+  common-network:
+    driver: bridge

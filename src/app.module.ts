@@ -15,6 +15,9 @@ import { LoginGuard } from './login.guard';
 import { PermissionGuard } from './permission.guard';
 import { MeetingModule } from './meeting/meeting.module';
 import { MeetingRoom } from './meeting/entities/meeting.entity';
+import { BookingModule } from './booking/booking.module';
+import { Booking } from './booking/entities/booking.entity';
+import * as path from 'path';
 
 @Module({
   imports: [
@@ -32,10 +35,11 @@ import { MeetingRoom } from './meeting/entities/meeting.entity';
     }),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: 'src/.env',
+      envFilePath: path.join(__dirname, '.env'),
     }),
     TypeOrmModule.forRootAsync({
       useFactory(configService: ConfigService) {
+        console.log('host=>>', configService.get('MYSQL_SERVER_HOST'));
         return {
           type: 'mysql',
           host: configService.get('MYSQL_SERVER_HOST'),
@@ -43,9 +47,9 @@ import { MeetingRoom } from './meeting/entities/meeting.entity';
           username: configService.get('MYSQL_SERVER_USERNAME'),
           password: configService.get('MYSQL_SERVER_PASSWORD'),
           database: configService.get('MYSQL_SERVER_DATABASE'),
-          synchronize: true,
+          synchronize: false,
           logging: true,
-          entities: [User, Role, Permission, MeetingRoom],
+          entities: [User, Role, Permission, MeetingRoom, Booking],
           poolSize: 10,
           connectorPackage: 'mysql2',
           extra: {
@@ -59,6 +63,7 @@ import { MeetingRoom } from './meeting/entities/meeting.entity';
     RedisModule,
     EmailModule,
     MeetingModule,
+    BookingModule,
   ],
   controllers: [AppController],
   providers: [

@@ -9,10 +9,7 @@ import { ConfigService } from '@nestjs/config';
     {
       provide: 'REDIS_CLIENT',
       async useFactory(configService: ConfigService) {
-        console.log(
-          'redist的host=》',
-          typeof configService.get('REDIS_SERVER_HOST'),
-        );
+        console.log('redist的host=》', configService.get('REDIS_SERVER_HOST'));
         console.log('redis的port=>' + configService.get('REDIS_SERVER_PORT'));
 
         const client = createClient({
