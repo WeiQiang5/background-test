@@ -47,7 +47,7 @@ import * as path from 'path';
           username: configService.get('MYSQL_SERVER_USERNAME'),
           password: configService.get('MYSQL_SERVER_PASSWORD'),
           database: configService.get('MYSQL_SERVER_DATABASE'),
-          synchronize: false,
+          synchronize: true,
           logging: true,
           entities: [User, Role, Permission, MeetingRoom, Booking],
           poolSize: 10,
